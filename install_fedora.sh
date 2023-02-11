@@ -12,7 +12,7 @@ dnf update -y
 dnf upgrade -y
 echo -e "\033[1;30;42mUpdate Finished.\033[0m"
 
-# Install GCC
+# Install required packages for GCC
 echo -e "\033[1;30;43mInstalling GCC...\033[0m"
 dnf install -y gcc
 if command -v gcc &> /dev/null; then

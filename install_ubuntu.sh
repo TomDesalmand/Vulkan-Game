@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Check if running as root
-if ["$(id -u)" != "0"]; then
+if [ "$(id -u)" != "0" ]; then
   echo -e "\033[1;30;41mPlease run this script as root.\033[0m"
   exit 84
 fi
@@ -12,10 +12,20 @@ apt-get update -y
 apt-get upgrade -y
 echo -e "\033[1;30;42mUpdate Finished.\033[0m"
 
+# Install GCC
+echo -e "\033[1;30;43mInstalling GCC...\033[0m"
+apt-get install -y gcc
+if command -v gcc &> /dev/null; then
+  echo -e "\033[1;30;42mGCC has been successfully installed.\033[0m"
+else
+  echo -e "\033[1;30;41mGCC installation failed.\033[0m"
+  exit 84
+fi
+
 # Install required packages for pkg-config
 echo -e "\033[1;30;43mInstalling pkg-config...\033[0m"
 apt-get install -y pkgconfig
-if which pkg-config &> /dev/null; then
+if command -v pkg-config &> /dev/null; then
   echo -e "\033[1;30;42mpkg-config has been successfully installed.\033[0m"
 else
   echo -e "\033[1;30;41mpkg-config installation failed.\033[0m"
@@ -25,7 +35,7 @@ fi
 # Install required packages for Cmake
 echo -e "\033[1;30;43mInstalling Cmake...\033[0m"
 sudo apt-get install -y cmake
-if which cmake &> /dev/null; then
+if command -v cmake &> /dev/null; then
   echo -e "\033[1;30;42mCMake has been successfully installed.\033[0m"
 else
   echo -e "\033[1;30;41mCMake installation failed.\033[0m"
@@ -53,7 +63,7 @@ cmake ..
 make && make install
 cd ~
 rm -rf Vulkan-Headers
-if which vulkaninfo &>/dev/null; then
+if command -v vulkaninfo &>/dev/null; then
   echo -e "\033[1;30;42mVulkan SDK has been successfully installed.\033[0m"
 else
   echo -e "\033[1;30;41mVulkan SDK installation failed.\033[0m"

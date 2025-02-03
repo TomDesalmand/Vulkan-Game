@@ -1,12 +1,17 @@
+UNAME_S := $(shell uname -s)
+
 CC 		= 	g++
 
-CFLAGS	= 	-Wall -Wextra -g3
+CFLAGS	= 	-std=c++17 -Wall -Wextra -g3
 
-INCLUDES= 	-I./include/window \
-			-I./include/pipeline \
-			-I./include/devices \
+INCLUDES= 	-I./include \
 
-LDFLAGS	= 	-lvulkan -lglfw -lm
+ifeq ($(UNAME_S), Darwin)
+	LDFLAGS	= 	-lvulkan -lglfw -lm -L/opt/homebrew/lib
+	INCLUDES += -I/opt/homebrew/include
+else
+	LDFLAGS	= 	-lvulkan -lglfw -lm
+endif
 
 RM		=	rm -f
 
@@ -38,7 +43,7 @@ $(NAME)	:	$(OBJ)
 shaders	: 	$(SHADERS_BIN)
 
 %.vert.spv: %.vert
-	glslc $< -o $@
+	glslc $< -o $@````
 
 %.frag.spv: %.frag
 	glslc $< -o $@

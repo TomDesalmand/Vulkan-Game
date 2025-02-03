@@ -1,5 +1,5 @@
-#include "pipeline.hpp"
-#include "model.hpp"
+#include "pipeline/pipeline.hpp"
+#include "pipeline/model.hpp"
 
 #include <fstream>
 #include <iostream>
@@ -43,7 +43,7 @@ namespace vulkan {
         vertexInputInformation.vertexBindingDescriptionCount = static_cast<uint32_t>(bindingDescriptions.size());
         vertexInputInformation.pVertexAttributeDescriptions = attributeDescriptions.data();
         vertexInputInformation.pVertexBindingDescriptions = bindingDescriptions.data();
-        
+
         VkGraphicsPipelineCreateInfo pipelineInformation{};
         pipelineInformation.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
         pipelineInformation.stageCount = 2; // Count of how many programmable stages the pipeline will use. (shaders) //
@@ -80,7 +80,7 @@ namespace vulkan {
 
     std::vector<char> Pipeline::readFile(const std::string &filePath) {
         std::ifstream file{filePath, std::ios::ate | std::ios::binary};
-        
+
         if (!file.is_open()) {
             throw std::runtime_error("Failed to open file: " + filePath);
         }
@@ -90,7 +90,7 @@ namespace vulkan {
         file.seekg(0);
         file.read(buffer.data(), fileSize);
         file.close();
-        return buffer; 
+        return buffer;
     }
 
     void Pipeline::defaultPipelineConfigurationInformation(PipelineConfigurationInformation &configurationInformation) {
@@ -104,7 +104,7 @@ namespace vulkan {
         configurationInformation.viewportInformation.pViewports = nullptr;
         configurationInformation.viewportInformation.scissorCount = 1;
         configurationInformation.viewportInformation.pScissors = nullptr;
-        
+
         configurationInformation.rasterizationInformation.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
         configurationInformation.rasterizationInformation.depthClampEnable = VK_FALSE;
         configurationInformation.rasterizationInformation.rasterizerDiscardEnable = VK_FALSE;
@@ -116,7 +116,7 @@ namespace vulkan {
         configurationInformation.rasterizationInformation.depthBiasConstantFactor = 0.0f;
         configurationInformation.rasterizationInformation.depthBiasClamp = 0.0f;
         configurationInformation.rasterizationInformation.depthBiasSlopeFactor = 0.0f;
-        
+
         configurationInformation.multisampleInformation.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
         configurationInformation.multisampleInformation.sampleShadingEnable = VK_FALSE;
         configurationInformation.multisampleInformation.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
@@ -124,16 +124,16 @@ namespace vulkan {
         configurationInformation.multisampleInformation.pSampleMask = nullptr;
         configurationInformation.multisampleInformation.alphaToCoverageEnable = VK_FALSE;
         configurationInformation.multisampleInformation.alphaToOneEnable = VK_FALSE;
-        
+
         configurationInformation.colorBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
-        configurationInformation.colorBlendAttachment.blendEnable = VK_FALSE; 
+        configurationInformation.colorBlendAttachment.blendEnable = VK_FALSE;
         configurationInformation.colorBlendAttachment.srcColorBlendFactor = VK_BLEND_FACTOR_ONE;
         configurationInformation.colorBlendAttachment.dstColorBlendFactor = VK_BLEND_FACTOR_ZERO;
         configurationInformation.colorBlendAttachment.colorBlendOp = VK_BLEND_OP_ADD;
         configurationInformation.colorBlendAttachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
         configurationInformation.colorBlendAttachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
         configurationInformation.colorBlendAttachment.alphaBlendOp = VK_BLEND_OP_ADD;
-        
+
         configurationInformation.colorBlendInformation.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
         configurationInformation.colorBlendInformation.logicOpEnable = VK_FALSE;
         configurationInformation.colorBlendInformation.logicOp = VK_LOGIC_OP_COPY;
@@ -143,7 +143,7 @@ namespace vulkan {
         configurationInformation.colorBlendInformation.blendConstants[1] = 0.0f;
         configurationInformation.colorBlendInformation.blendConstants[2] = 0.0f;
         configurationInformation.colorBlendInformation.blendConstants[3] = 0.0f;
-        
+
         configurationInformation.depthStencilInformation.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
         configurationInformation.depthStencilInformation.depthTestEnable = VK_TRUE;
         configurationInformation.depthStencilInformation.depthWriteEnable = VK_TRUE;

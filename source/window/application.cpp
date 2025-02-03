@@ -1,10 +1,9 @@
-#include "application.hpp"
+#include "window/application.hpp"
 
 // GLM include //
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #include <glm/glm.hpp>
-
 
 #include <stdexcept>
 #include <array>
@@ -24,7 +23,7 @@ namespace vulkan {
         recreateSwapChain();
         createCommandBuffers();
     }
-    
+
     void Application::run() {
         while (!_window.IsClosed()) {
             glfwPollEvents();
@@ -64,7 +63,7 @@ namespace vulkan {
         assert(_swapChain != nullptr && "Cannot create pipeline before swap-chain.");
         assert(_pipelineLayout != nullptr && "Cannot create pipeline before pipeline layout.");
 
-        PipelineConfigurationInformation pipelineConfiguration{}; 
+        PipelineConfigurationInformation pipelineConfiguration{};
         Pipeline::defaultPipelineConfigurationInformation(pipelineConfiguration);
         pipelineConfiguration.renderPass = _swapChain->getRenderPass();
         pipelineConfiguration.pipelineLayout = _pipelineLayout;
@@ -95,13 +94,13 @@ namespace vulkan {
 
     void Application::createCommandBuffers() {
         _commandBuffers.resize(_swapChain->getImageCount());
-        
+
         VkCommandBufferAllocateInfo allocatedInformation{};
         allocatedInformation.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
         allocatedInformation.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
         allocatedInformation.commandPool = _device.getCommandPool();
         allocatedInformation.commandBufferCount = static_cast<uint32_t>(_commandBuffers.size());
-        
+
         if (vkAllocateCommandBuffers(_device.getDevice(), &allocatedInformation, _commandBuffers.data()) != VK_SUCCESS) {
             throw std::runtime_error("Failed to allocate command buffers.");
         }
@@ -118,7 +117,7 @@ namespace vulkan {
 
         VkCommandBufferBeginInfo beginInformation{};
         beginInformation.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-        
+
         if (vkBeginCommandBuffer(_commandBuffers[imageIndex], &beginInformation) != VK_SUCCESS) {
             throw std::runtime_error("Failed to begin recording command buffer.");
         }
@@ -129,9 +128,9 @@ namespace vulkan {
         renderPassInformation.framebuffer = _swapChain->getFrameBuffer(imageIndex);
         renderPassInformation.renderArea.offset = {0, 0};
         renderPassInformation.renderArea.extent = _swapChain->getSwapChainExtent();
-    
+
         std::array<VkClearValue, 2> clearValues{};
-        clearValues[0].color = {0.01f, 0.01f, 0.01f, 1.0f};
+        clearValues[0].color = {{0.01f, 0.01f, 0.01f, 1.0f}};
         clearValues[1].depthStencil = {1.0f, 0};
         renderPassInformation.clearValueCount = static_cast<uint32_t>(clearValues.size());
         renderPassInformation.pClearValues = clearValues.data();
@@ -161,7 +160,7 @@ namespace vulkan {
         }
 
         vkCmdEndRenderPass(_commandBuffers[imageIndex]);
-        
+
         if (vkEndCommandBuffer(_commandBuffers[imageIndex]) != VK_SUCCESS) {
             throw std::runtime_error("Failed to record command buffer.");
         }

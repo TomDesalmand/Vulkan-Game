@@ -1,4 +1,4 @@
-#include "model.hpp"
+#include "pipeline/model.hpp"
 
 #include <cassert>
 #include <cstring>
@@ -20,7 +20,7 @@ namespace vulkan {
         memcpy(data, vertices.data(), static_cast<size_t>(bufferSize));
         vkUnmapMemory(_device.getDevice(), _vertexBufferMemory);
     }
-    
+
     void Model::bind(VkCommandBuffer commandBuffer) {
         VkBuffer buffers[] = {_vertexBuffer};
         VkDeviceSize offsets[] ={0};
@@ -30,7 +30,7 @@ namespace vulkan {
     void Model::draw(VkCommandBuffer commandBuffer) {
         vkCmdDraw(commandBuffer, _vertexCount, 1, 0 ,0);
     }
-    
+
     std::vector<VkVertexInputBindingDescription> Model::Vertex::getBindingDescriptions() {
         std::vector<VkVertexInputBindingDescription> bindingDescriptions(1);
         bindingDescriptions[0].binding = 0;
@@ -52,7 +52,7 @@ namespace vulkan {
         attributeDescriptions[1].offset = offsetof(Vertex, color);
         return attributeDescriptions;
     }
-    
+
     Model::~Model() {
         vkDestroyBuffer(_device.getDevice(), _vertexBuffer, nullptr);
         vkFreeMemory(_device.getDevice(), _vertexBufferMemory, nullptr);

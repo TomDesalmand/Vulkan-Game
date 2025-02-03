@@ -1,4 +1,4 @@
-#include "application.hpp"
+#include "window/application.hpp"
 #include <cstdlib>
 #include <stdexcept>
 #include <iostream>
@@ -10,7 +10,7 @@ int main()
         application.run();
     } catch(const std::exception &error) {
        std::cerr << "Failed to run application: " << error.what() << std::endl;
-       return EXIT_FAILURE; 
+       return EXIT_FAILURE;
     }
     return EXIT_SUCCESS;
 }

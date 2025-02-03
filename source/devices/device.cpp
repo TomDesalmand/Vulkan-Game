@@ -1,4 +1,4 @@
-#include "device.hpp"
+#include "devices/device.hpp"
 
 #include <cstring>
 #include <iostream>
@@ -16,7 +16,7 @@ namespace vulkan {
         createCommandPool();
     }
 
-    VkCommandPool Device::getCommandPool() { 
+    VkCommandPool Device::getCommandPool() {
         return _commandPool;
     }
 
@@ -86,6 +86,11 @@ namespace vulkan {
         createInformation.pApplicationInfo = &appInformation;
 
         std::vector<const char *> extensions = getRequiredExtensions();
+
+        #ifdef __APPLE__
+            extensions.push_back(VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME);
+        #endif
+
         createInformation.enabledExtensionCount = static_cast<uint32_t>(extensions.size());
         createInformation.ppEnabledExtensionNames = extensions.data();
 
@@ -99,6 +104,10 @@ namespace vulkan {
             createInformation.enabledLayerCount = 0;
             createInformation.pNext = nullptr;
         }
+
+        #ifdef __APPLE__
+            createInformation.flags |= VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR;
+        #endif
 
         if (vkCreateInstance(&createInformation, nullptr, &_instance) != VK_SUCCESS) {
             throw std::runtime_error("Failed to create instance.");
@@ -191,8 +200,8 @@ namespace vulkan {
         }
     }
 
-    void Device::createSurface() { 
-        _window.createWindowSurface(_instance, &_surface); 
+    void Device::createSurface() {
+        _window.createWindowSurface(_instance, &_surface);
     }
 
     bool Device::isDeviceSuitable(VkPhysicalDevice device) {
@@ -228,7 +237,7 @@ namespace vulkan {
 
         VkDebugUtilsMessengerCreateInfoEXT createInfo;
         populateDebugMessengerCreateInfo(createInfo);
-        
+
         if (CreateDebugUtilsMessengerEXT(_instance, &createInfo, nullptr, &_debugMessenger) != VK_SUCCESS) {
             throw std::runtime_error("failed to set up debug messenger!");
         }

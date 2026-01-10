@@ -3,9 +3,10 @@
 // Header files include //
 #include "pipeline/model.hpp"
 #include "logger/logging.hpp"
-#include "components/transform2dComponent.hpp"
+#include "components/transformComponent.hpp"
 #include "components/colorComponent.hpp"
 #include "components/modelComponent.hpp"
+#include "components/gravityComponent.hpp"
 #include "components/velocityComponent.hpp"
 
 // STD include //

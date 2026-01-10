@@ -33,7 +33,6 @@ namespace vulkan {
 
         public:
             RenderSystem(Device &device, VkRenderPass renderPass);
-            // extent is supplied so the system can build a projection that is aspect-correct
             void renderRegistry(VkCommandBuffer commandBuffer, Registry &registry, const VkExtent2D &extent);
             ~RenderSystem();
 

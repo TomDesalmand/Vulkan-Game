@@ -153,7 +153,7 @@ namespace vulkan {
 
         vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipelineLayout, 0, 1, &_descriptorSet, 0, nullptr);
 
-        registry.each<ModelComponent, Transform2dComponent, ColorComponent>([&](Entity id, ModelComponent &component, Transform2dComponent &transformComponent, ColorComponent &colorComponet) {
+        registry.each<ModelComponent, TransformComponent, ColorComponent>([&](Entity id, ModelComponent &component, TransformComponent &transformComponent, ColorComponent &colorComponet) {
             (void) id;
             transformComponent.rotateObject(0.1f);
             transformComponent.scaleObject(0.25f);

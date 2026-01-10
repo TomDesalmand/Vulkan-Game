@@ -1,0 +1,6 @@
+.vscode
+project
+*.o
+*spv
+compile_commands.json
+.cache

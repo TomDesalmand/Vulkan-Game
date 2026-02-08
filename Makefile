@@ -16,6 +16,7 @@ else
 endif
 
 CPPFLAGS += -DLOG_LEVEL=$(LOG_LEVEL)
+CPPFLAGS += -DUSE_STB_TRUETYPE
 CPPFLAGS += $(addprefix -I,$(INCLUDE_DIRS))
 CPPFLAGS += $(INCLUDES)
 
@@ -31,7 +32,8 @@ SRC := $(wildcard *.cpp) \
        $(wildcard source/devices/*.cpp) \
        $(wildcard source/game/*.cpp) \
        $(wildcard source/systems/*.cpp) \
-       $(wildcard source/input/*.cpp)
+       $(wildcard source/input/*.cpp) \
+       $(wildcard source/utils/*.cpp)
 
 OBJ := $(SRC:.cpp=.o)
 
@@ -46,22 +48,17 @@ SHADERS_BIN := $(VERT_SPVS) $(FRAG_SPVS)
 all: maybe_bear
 
 maybe_bear:
-	@if [ "$(UNAME_S)" != "Darwin" ]; then \
-		echo "Non-macOS platform detected; running normal build"; \
+	@if ! command -v bear >/dev/null 2>&1 ; then \
+		echo "bear not found in PATH; running normal build"; \
+		$(MAKE) --no-print-directory build; \
+	elif [ -f compile_commands.json ]; then \
+		echo "compile_commands.json already exists; running normal build"; \
+		$(MAKE) --no-print-directory build; \
+	elif [ -n "$$BEAR_CAPTURE" ]; then \
 		$(MAKE) --no-print-directory build; \
 	else \
-		if ! command -v bear >/dev/null 2>&1 ; then \
-			echo "bear not found in PATH; running normal build"; \
-			$(MAKE) --no-print-directory build; \
-		elif [ -f compile_commands.json ]; then \
-			echo "compile_commands.json already exists; running normal build"; \
-			$(MAKE) --no-print-directory build; \
-		elif [ -n "$$BEAR_CAPTURE" ]; then \
-			$(MAKE) --no-print-directory build; \
-		else \
-			echo "Capturing compile commands with bear (one-time build) ..."; \
-			BEAR_CAPTURE=1 exec bear -- $(MAKE) --no-print-directory build; \
-		fi; \
+		echo "Capturing compile commands with bear (one-time build) ..."; \
+		BEAR_CAPTURE=1 exec bear -- $(MAKE) --no-print-directory build; \
 	fi
 
 build: $(NAME) shaders

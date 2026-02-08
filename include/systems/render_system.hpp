@@ -7,23 +7,34 @@
 
 // STD include //
 #include <memory>
-#include <vector>
+
+// Vulkan include //
 #include <vulkan/vulkan_core.h>
+
+// GLM include //
+#define GLM_FORCE_RADIANS
+#define GLM_FORCE_DEPTH_ZERO_TO_ONE
+#include <glm/glm.hpp>
 
 namespace vulkan {
 
-    class RenderSystem {
+    struct UnifiedPushConstantData {
+        alignas(16) glm::mat4 model{1.0f};
+        alignas(16) glm::vec3 tintColor{1.0f, 1.0f, 1.0f};
+    };
+
+    class UnifiedRenderSystem {
         private:
             Device &_device;
             std::unique_ptr<Pipeline> _pipeline;
-            VkPipelineLayout _pipelineLayout;
+            VkPipelineLayout _pipelineLayout{VK_NULL_HANDLE};
 
-            // Descriptor & UBO for global camera/projection (set = 0, binding = 0)
+            // Descriptor resources (set = 0)
             VkDescriptorSetLayout _descriptorSetLayout{VK_NULL_HANDLE};
             VkDescriptorPool _descriptorPool{VK_NULL_HANDLE};
             VkDescriptorSet _descriptorSet{VK_NULL_HANDLE};
 
-            // Uniform buffer to hold projection matrix
+            // Uniform buffer for projection matrix (binding = 0)
             VkBuffer _projUniformBuffer{VK_NULL_HANDLE};
             VkDeviceMemory _projUniformBufferMemory{VK_NULL_HANDLE};
 
@@ -32,12 +43,15 @@ namespace vulkan {
             void createPipeline(VkRenderPass renderPass);
 
         public:
-            RenderSystem(Device &device, VkRenderPass renderPass);
-            void renderRegistry(VkCommandBuffer commandBuffer, Registry &registry, const VkExtent2D &extent);
-            ~RenderSystem();
+            UnifiedRenderSystem(Device &device, VkRenderPass renderPass);
+            ~UnifiedRenderSystem();
 
-            RenderSystem(const RenderSystem &) = delete;
-            RenderSystem &operator=(const RenderSystem &) = delete;
+            // Main rendering function
+            void renderRegistry(VkCommandBuffer commandBuffer, Registry &registry, const VkExtent2D &extent);
+
+            // Delete copy constructor and assignment
+            UnifiedRenderSystem(const UnifiedRenderSystem &) = delete;
+            UnifiedRenderSystem &operator=(const UnifiedRenderSystem &) = delete;
     };
 
-}
+} // namespace vulkan

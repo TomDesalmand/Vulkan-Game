@@ -1,8 +1,6 @@
 // Header files include //
 #include "window/application.hpp"
 #include "input/input.hpp"
-#include "logger/logging.hpp"
-#include "systems/render_system.hpp"
 #include "systems/transform_system.hpp"
 #include "systems/gravity_system.hpp"
 #include "systems/game_event_system.hpp"
@@ -31,10 +29,12 @@ namespace vulkan {
         
         // Systems //
         Input input{_window.getGlfwWindow()};
-        _renderSystem = std::make_unique<RenderSystem>(_device, _renderer.getSwapChainRenderPass());
+        _unifiedRenderSystem = std::make_unique<UnifiedRenderSystem>(_device, _renderer.getSwapChainRenderPass());
         GravitySystem gravity{};
         TransformSystem transform{};
         GameEventSystem gameEvent{};
+        
+
         
         while (!_window.IsClosed()) {
             glfwPollEvents();
@@ -48,12 +48,12 @@ namespace vulkan {
             }
             if (VkCommandBuffer commandBuffer = _renderer.beginFrame()) {
                 _renderer.beginSwapChainRenderPass(commandBuffer);
-                _renderSystem->renderRegistry(commandBuffer, _registry, _renderer.getSwapChainExtent());
+                _unifiedRenderSystem->renderRegistry(commandBuffer, _registry, _renderer.getSwapChainExtent());
                 _renderer.endSwapChainRenderPass(commandBuffer);
                 _renderer.endFrame();
             }
         }   
-        _renderSystem.reset();
+        _unifiedRenderSystem.reset();
         vkDeviceWaitIdle(_device.getDevice());
     }
     
@@ -67,26 +67,29 @@ namespace vulkan {
 
     void Application::loadObjects() {
         std::vector<Model::Vertex> vertecies {
-            {{-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}},
-            {{0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}},
-            {{0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}},
-            {{0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}},
-            {{-0.5f, 0.5f}, {1.0f, 1.0f, 0.0f}},
-            {{-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}}
+            {{-0.5f, -0.5f}, {1.0f, 1.0f, 1.0f}},
+            {{0.5f, -0.5f},  {1.0f, 1.0f, 1.0f}},
+            {{0.5f, 0.5f},   {1.0f, 1.0f, 1.0f}},
+            {{0.5f, 0.5f},   {1.0f, 1.0f, 1.0f}},
+            {{-0.5f, 0.5f},  {1.0f, 1.0f, 1.0f}},
+            {{-0.5f, -0.5f}, {1.0f, 1.0f, 1.0f}}
         };
-
+        
         std::shared_ptr<Model> model = std::make_shared<Model>(_device, vertecies);
 
-        Entity entity = _registry.create_entity();
-        _registry.emplace_component<ModelComponent>(entity, ModelComponent{model});
-        _registry.emplace_component<ColorComponent>(entity, ColorComponent{{.1f, .8f, .1f}});
-        _registry.emplace_component<TransformComponent>(entity, TransformComponent{{ .2f, 0.0f }, {2.f, .5f}, .25f * glm::two_pi<float>()});
-        _registry.emplace_component<VelocityComponent>(entity, VelocityComponent{{0.0f, 0.0f}, {0.0f, 0.0f}, 0.0f, 10.0f});
-        _registry.emplace_component<GravityComponent>(entity, GravityComponent{{0.0f, 9.81f}, true});
+        Entity square = _registry.create_entity();
+        _registry.emplace_component<ModelComponent>(square, ModelComponent{model});
+        _registry.emplace_component<ColorComponent>(square, ColorComponent{{0.0f, 1.0f, 0.0f}});
+        _registry.emplace_component<TransformComponent>(square, TransformComponent{{ .2f, 0.0f }, {2.f, 2.f}, .25f * glm::two_pi<float>()});
+        _registry.emplace_component<VelocityComponent>(square, VelocityComponent{{0.0f, 0.0f}, {0.0f, 0.0f}, 0.0f, 10.0f});
+        _registry.emplace_component<GravityComponent>(square, GravityComponent{{0.0f, 9.81f}, true});
+        
+
+        
     }
 
     Application::~Application() {
-        _renderSystem.reset();
+        _unifiedRenderSystem.reset();
     }
 
 }

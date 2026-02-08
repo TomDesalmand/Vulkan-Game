@@ -7,8 +7,10 @@
 #include <string>
 #include <vector>
 
-namespace vulkan {
+// Vulkan types
+#include <vulkan/vulkan_core.h>
 
+namespace vulkan {
     struct PipelineConfigurationInformation {
         VkPipelineViewportStateCreateInfo viewportInformation;
         VkPipelineInputAssemblyStateCreateInfo inputAssemblyInformation;
@@ -19,8 +21,11 @@ namespace vulkan {
         VkPipelineDepthStencilStateCreateInfo depthStencilInformation;
         std::vector<VkDynamicState> dynamicStateEnables;
         VkPipelineDynamicStateCreateInfo dynamicStateInformation;
-        VkPipelineLayout pipelineLayout = nullptr;
-        VkRenderPass renderPass = nullptr;
+        std::vector<VkVertexInputBindingDescription> vertexBindingDescriptions;
+        std::vector<VkVertexInputAttributeDescription> vertexAttributeDescriptions;
+
+        VkPipelineLayout pipelineLayout = VK_NULL_HANDLE;
+        VkRenderPass renderPass = VK_NULL_HANDLE;
         uint32_t subpass = 0;
     };
 

@@ -11,6 +11,9 @@
 // STD include //
 #include <vector>
 
+// Vulkan include //
+#include <vulkan/vulkan_core.h>
+
 namespace vulkan {
 
     class Model {

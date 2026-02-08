@@ -1,14 +1,21 @@
 #!/bin/bash
 
-# Check if glslangValidator is installed
-if ! command -v glslangValidator &> /dev/null; then
-  echo -e "\033[1;30;41mError: glslangValidator is not installed.\033[0m"
+# Check for available shader compilers
+COMPILER=""
+if command -v glslangValidator &> /dev/null; then
+  COMPILER="glslangValidator"
+  echo "Using glslangValidator"
+elif command -v glslc &> /dev/null; then
+  COMPILER="glslc"
+  echo "Using glslc"
+else
+  echo -e "\033[1;30;41mError: No shader compiler found. Install glslangValidator or glslc.\033[0m"
   exit 1
 fi
 
 # List of shaders
-VERT_SHADERS=("shaders/simple_shader.vert")
-FRAG_SHADERS=("shaders/simple_shader.frag")
+VERT_SHADERS=("shaders/render_shader.vert")
+FRAG_SHADERS=("shaders/render_shader.frag")
 
 # Function to compile a shader
 compile_shader() {
@@ -17,7 +24,12 @@ compile_shader() {
   local OUTPUT_FILE="${SHADER_FILE%.*}.${EXTENSION}.spv" # Replace file extension with .spv
 
   echo -e "\033[1;30;43mCompiling $SHADER_FILE...\033[0m"
-  glslangValidator -V "$SHADER_FILE" -o "$OUTPUT_FILE"
+
+  if [ "$COMPILER" == "glslangValidator" ]; then
+    glslangValidator -V "$SHADER_FILE" -o "$OUTPUT_FILE"
+  elif [ "$COMPILER" == "glslc" ]; then
+    glslc "$SHADER_FILE" -o "$OUTPUT_FILE"
+  fi
 
   if [ $? -eq 0 ]; then
     echo -e "\033[1;30;42mCompiled successfully: $OUTPUT_FILE\033[0m"

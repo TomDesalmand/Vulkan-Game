@@ -3,9 +3,6 @@
 // Header files include //
 #include "game/ecs.hpp"
 
-// STD include //
-#include <cstdint>
-
 namespace vulkan {
 
     class Registry;

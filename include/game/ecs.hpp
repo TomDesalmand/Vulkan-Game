@@ -1,13 +1,13 @@
 #pragma once
 
 // Header files include //
-#include "pipeline/model.hpp"
 #include "logger/logging.hpp"
 #include "components/transformComponent.hpp"
 #include "components/colorComponent.hpp"
 #include "components/modelComponent.hpp"
 #include "components/gravityComponent.hpp"
 #include "components/velocityComponent.hpp"
+
 
 // STD include //
 #include <stdexcept>
@@ -16,8 +16,6 @@
 #include <unordered_map>
 #include <vector>
 #include <typeindex>
-#include <typeinfo>
-#include <type_traits>
 #include <limits>
 #include <algorithm>
 #include <tuple>

@@ -45,6 +45,7 @@ namespace vulkan {
     }
 
     std::vector<VkVertexInputAttributeDescription> Model::Vertex::getAttributeDescriptions() {
+        // position (vec2), color (vec3)
         std::vector<VkVertexInputAttributeDescription> attributeDescriptions(2);
         attributeDescriptions[0].location = 0;
         attributeDescriptions[0].binding = 0;

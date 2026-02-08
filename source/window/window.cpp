@@ -1,5 +1,6 @@
 // Header files include //
 #include "window/window.hpp"
+#include "logger/logging.hpp"
 
 // STD include //
 #include <stdexcept>
@@ -7,11 +8,19 @@
 namespace vulkan {
 
     Window::Window(int windowWidth, int windowHeight, std::string windowtitle) : _windowWidth(windowWidth), _windowHeight(windowHeight), _windowTitle(windowtitle) {
-        glfwInit();
+        if (glfwInit() != GLFW_TRUE) {
+            ERROR("Failed to initialize GLFW.");
+            throw std::runtime_error("Failed to initialize GLFW.");
+        }
         glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
         glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
 
         _window = glfwCreateWindow(_windowWidth, _windowHeight, _windowTitle.c_str(), nullptr, nullptr);
+        if (_window == nullptr) {
+            ERROR("Failed to create GLFW window.");
+            glfwTerminate();
+            throw std::runtime_error("Failed to create GLFW window.");
+        }
         glfwSetWindowUserPointer(_window, this);
         glfwSetFramebufferSizeCallback(_window, frameBufferResizeCallback);
     }
@@ -34,6 +43,7 @@ namespace vulkan {
 
     void Window::createWindowSurface(VkInstance instance, VkSurfaceKHR *surface) {
         if (glfwCreateWindowSurface(instance, _window, nullptr, surface) != VK_SUCCESS) {
+            ERROR("Failed to create a window surface.");
             throw std::runtime_error("Failed to create a window surface.");
         }
     }

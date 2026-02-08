@@ -1,12 +1,16 @@
 // Header files include //
 #include "systems/render_system.hpp"
-#include "logger/logging.hpp"
+#include "game/components/modelComponent.hpp"
+#include "game/components/transformComponent.hpp"
+#include "game/components/colorComponent.hpp"
 
 // STD include //
 #include <memory>
 #include <vector>
 #include <stdexcept>
 #include <cstring>
+#include <cmath>
+#include <cassert>
 
 // Vulkan include //
 #include <vulkan/vulkan_core.h>
@@ -19,54 +23,30 @@
 
 namespace vulkan {
 
-    struct SimplePushConstantData {
-        alignas(16) glm::mat4 model{1.0f};
-        alignas(16) glm::vec3 color{1.f};
-    };
-
-    RenderSystem::RenderSystem(Device &device, VkRenderPass renderPass) : _device{device} {
+    UnifiedRenderSystem::UnifiedRenderSystem(Device &device, VkRenderPass renderPass) : _device{device} {
         createDescriptorResources();
         createPipelineLayout();
         createPipeline(renderPass);
     }
 
-    void RenderSystem::createPipelineLayout() {
-        VkPushConstantRange pushConstantRange{};
-        pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
-        pushConstantRange.offset = 0;
-        pushConstantRange.size = sizeof(SimplePushConstantData);
-
-        VkPipelineLayoutCreateInfo pipelineLayoutInformation{};
-        pipelineLayoutInformation.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-
-        pipelineLayoutInformation.setLayoutCount = 1;
-        pipelineLayoutInformation.pSetLayouts = &_descriptorSetLayout;
-
-        pipelineLayoutInformation.pushConstantRangeCount = 1;
-        pipelineLayoutInformation.pPushConstantRanges = &pushConstantRange;
-        if (vkCreatePipelineLayout(_device.getDevice(), &pipelineLayoutInformation, nullptr, &_pipelineLayout) != VK_SUCCESS) {
-            throw std::runtime_error("Failed to create pipeline layout.");
-        }
-    }
-
-    void RenderSystem::createDescriptorResources() {
-        VkDescriptorSetLayoutBinding uboLayoutBinding{};
-        uboLayoutBinding.binding = 0;
-        uboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-        uboLayoutBinding.descriptorCount = 1;
-        uboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-        uboLayoutBinding.pImmutableSamplers = nullptr;
+    void UnifiedRenderSystem::createDescriptorResources() {
+        // Simple descriptor set layout with just projection matrix uniform
+        VkDescriptorSetLayoutBinding binding{};
+        binding.binding = 0;
+        binding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        binding.descriptorCount = 1;
+        binding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
 
         VkDescriptorSetLayoutCreateInfo layoutInfo{};
         layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
         layoutInfo.bindingCount = 1;
-        layoutInfo.pBindings = &uboLayoutBinding;
+        layoutInfo.pBindings = &binding;
 
         if (vkCreateDescriptorSetLayout(_device.getDevice(), &layoutInfo, nullptr, &_descriptorSetLayout) != VK_SUCCESS) {
-            ERROR("Failed to create descriptor set layout.");
-            throw std::runtime_error("Failed to create descriptor set layout.");
+            throw std::runtime_error("Failed to create descriptor set layout!");
         }
 
+        // Create descriptor pool
         VkDescriptorPoolSize poolSize{};
         poolSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
         poolSize.descriptorCount = 1;
@@ -78,10 +58,10 @@ namespace vulkan {
         poolInfo.maxSets = 1;
 
         if (vkCreateDescriptorPool(_device.getDevice(), &poolInfo, nullptr, &_descriptorPool) != VK_SUCCESS) {
-            ERROR("Failed to create descriptor pool.");
-            throw std::runtime_error("Failed to create descriptor pool.");
+            throw std::runtime_error("Failed to create descriptor pool!");
         }
 
+        // Allocate descriptor set
         VkDescriptorSetAllocateInfo allocInfo{};
         allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
         allocInfo.descriptorPool = _descriptorPool;
@@ -89,13 +69,20 @@ namespace vulkan {
         allocInfo.pSetLayouts = &_descriptorSetLayout;
 
         if (vkAllocateDescriptorSets(_device.getDevice(), &allocInfo, &_descriptorSet) != VK_SUCCESS) {
-            ERROR("Failed to allocate descriptor set for projection UBO.");
-            throw std::runtime_error("Failed to allocate descriptor set for projection UBO.");
+            throw std::runtime_error("Failed to allocate descriptor sets!");
         }
 
+        // Create projection matrix uniform buffer
         VkDeviceSize bufferSize = sizeof(glm::mat4);
-        _device.createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, _projUniformBuffer, _projUniformBufferMemory);
+        _device.createBuffer(
+            bufferSize,
+            VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+            _projUniformBuffer,
+            _projUniformBufferMemory
+        );
 
+        // Update descriptor set with uniform buffer
         VkDescriptorBufferInfo bufferInfo{};
         bufferInfo.buffer = _projUniformBuffer;
         bufferInfo.offset = 0;
@@ -113,97 +100,124 @@ namespace vulkan {
         vkUpdateDescriptorSets(_device.getDevice(), 1, &descriptorWrite, 0, nullptr);
     }
 
-    void RenderSystem::createPipeline(VkRenderPass renderPass) {
-        if (_pipelineLayout == VK_NULL_HANDLE) {
-            ERROR("Cannot create pipeline before pipeline layout.");
-            throw std::runtime_error("Cannot create pipeline before pipeline layout.");
+    void UnifiedRenderSystem::createPipelineLayout() {
+        VkPushConstantRange pushConstantRange{};
+        pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
+        pushConstantRange.offset = 0;
+        pushConstantRange.size = sizeof(UnifiedPushConstantData);
+
+        VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
+        pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+        pipelineLayoutInfo.setLayoutCount = 1;
+        pipelineLayoutInfo.pSetLayouts = &_descriptorSetLayout;
+        pipelineLayoutInfo.pushConstantRangeCount = 1;
+        pipelineLayoutInfo.pPushConstantRanges = &pushConstantRange;
+
+        if (vkCreatePipelineLayout(_device.getDevice(), &pipelineLayoutInfo, nullptr, &_pipelineLayout) != VK_SUCCESS) {
+            throw std::runtime_error("Failed to create pipeline layout!");
         }
-
-        PipelineConfigurationInformation pipelineConfiguration{};
-        Pipeline::defaultPipelineConfigurationInformation(pipelineConfiguration);
-        pipelineConfiguration.renderPass = renderPass;
-        pipelineConfiguration.pipelineLayout = _pipelineLayout;
-        _pipeline = std::make_unique<Pipeline>(_device, "shaders/simple_shader.vert.spv", "shaders/simple_shader.frag.spv", pipelineConfiguration);
-
     }
-    
-    void RenderSystem::renderRegistry(VkCommandBuffer commandBuffer, Registry &registry, const VkExtent2D &extent) {
+
+    void UnifiedRenderSystem::createPipeline(VkRenderPass renderPass) {
+        assert(_pipelineLayout != VK_NULL_HANDLE && "Cannot create pipeline before pipeline layout");
+
+        PipelineConfigurationInformation pipelineConfig{};
+        Pipeline::defaultPipelineConfigurationInformation(pipelineConfig);
+
+        pipelineConfig.renderPass = renderPass;
+        pipelineConfig.pipelineLayout = _pipelineLayout;
+
+        // Configure vertex input for Model::Vertex
+        pipelineConfig.vertexBindingDescriptions = Model::Vertex::getBindingDescriptions();
+        pipelineConfig.vertexAttributeDescriptions = Model::Vertex::getAttributeDescriptions();
+
+        _pipeline = std::make_unique<Pipeline>(
+            _device,
+            "shaders/render_shader.vert.spv",
+            "shaders/render_shader.frag.spv",
+            pipelineConfig
+        );
+    }
+
+    void UnifiedRenderSystem::renderRegistry(VkCommandBuffer commandBuffer, Registry &registry, const VkExtent2D &extent) {
+        if (!_pipeline) return;
+
         _pipeline->bind(commandBuffer);
 
+        // Calculate orthographic projection matrix
         const float virtualWorldHeight = 5.0f;
         const float aspect = static_cast<float>(extent.width) / static_cast<float>(extent.height);
         const float worldHalfHeight = virtualWorldHeight * 0.5f;
         const float worldHalfWidth = worldHalfHeight * aspect;
 
-        const float left = -worldHalfWidth;
-        const float right = worldHalfWidth;
-        const float bottom = -worldHalfHeight;
-        const float top = worldHalfHeight;
-
         glm::mat4 proj = glm::mat4(1.0f);
-        proj[0][0] = 2.0f / (right - left);
-        proj[1][1] = 2.0f / (top - bottom);
-        proj[3][0] = -(right + left) / (right - left);
-        proj[3][1] = -(top + bottom) / (top - bottom);
+        proj[0][0] = 1.0f / worldHalfWidth;
+        proj[1][1] = 1.0f / worldHalfHeight;
+        proj[3][0] = 0.0f;
+        proj[3][1] = 0.0f;
 
-        void *data;
+        // Update projection matrix in uniform buffer
+        void *data = nullptr;
         vkMapMemory(_device.getDevice(), _projUniformBufferMemory, 0, sizeof(glm::mat4), 0, &data);
-        memcpy(data, &proj, sizeof(glm::mat4));
+        std::memcpy(data, &proj, sizeof(glm::mat4));
         vkUnmapMemory(_device.getDevice(), _projUniformBufferMemory);
 
-        vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipelineLayout, 0, 1, &_descriptorSet, 0, nullptr);
+        // Bind descriptor set
+        vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipelineLayout, 
+                               0, 1, &_descriptorSet, 0, nullptr);
 
-        registry.each<ModelComponent, TransformComponent, ColorComponent>([&](Entity id, ModelComponent &component, TransformComponent &transformComponent, ColorComponent &colorComponet) {
-            (void) id;
-            transformComponent.rotateObject(0.1f);
-            transformComponent.scaleObject(0.25f);
+        // Render geometry (triangles, rectangles, etc.)
+        registry.each<ModelComponent, TransformComponent, ColorComponent>([&](Entity /*id*/, ModelComponent &modelComp, TransformComponent &transform, ColorComponent &colorComp) {
+            if (!modelComp.model) return;
+
+            // Apply demo rotation
+            transform.rotateObject(0.1f);
+            
+            // Build transformation matrix
+            float c = glm::cos(transform.rotation);
+            float s = glm::sin(transform.rotation);
 
             glm::mat4 model = glm::mat4(1.0f);
-            float c = glm::cos(transformComponent.rotation);
-            float s = glm::sin(transformComponent.rotation);
+            model[0][0] = transform.scale.x * c;
+            model[0][1] = transform.scale.x * s;
+            model[1][0] = -transform.scale.y * s;
+            model[1][1] = transform.scale.y * c;
+            model[3][0] = transform.translation.x;
+            model[3][1] = transform.translation.y;
 
-            model[0][0] = transformComponent.scale.x * c;
-            model[0][1] = transformComponent.scale.x * s;
-            model[1][0] = -transformComponent.scale.y * s;
-            model[1][1] = transformComponent.scale.y * c;
-
-            model[3][0] = transformComponent.translation.x;
-            model[3][1] = transformComponent.translation.y;
-
-            SimplePushConstantData push{};
+            // Push constants for solid color mode
+            UnifiedPushConstantData push{};
             push.model = model;
-            push.color = colorComponet.color;
+            push.tintColor = colorComp.color;
 
-            vkCmdPushConstants(commandBuffer, _pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(SimplePushConstantData), &push);
+            vkCmdPushConstants(commandBuffer, _pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 
+                              0, sizeof(UnifiedPushConstantData), &push);
 
-            if (component.model) {
-                component.model->bind(commandBuffer);
-                component.model->draw(commandBuffer);
-            }
+            modelComp.model->bind(commandBuffer);
+            modelComp.model->draw(commandBuffer);
         });
     }
 
-
-    RenderSystem::~RenderSystem() {
+    UnifiedRenderSystem::~UnifiedRenderSystem() {
+        // Wait for all operations to complete before cleanup
         vkDeviceWaitIdle(_device.getDevice());
+
+        // Clean up Vulkan resources in reverse order of creation
         if (_projUniformBuffer != VK_NULL_HANDLE) {
             vkDestroyBuffer(_device.getDevice(), _projUniformBuffer, nullptr);
-            _projUniformBuffer = VK_NULL_HANDLE;
         }
         if (_projUniformBufferMemory != VK_NULL_HANDLE) {
             vkFreeMemory(_device.getDevice(), _projUniformBufferMemory, nullptr);
-            _projUniformBufferMemory = VK_NULL_HANDLE;
         }
         if (_descriptorPool != VK_NULL_HANDLE) {
             vkDestroyDescriptorPool(_device.getDevice(), _descriptorPool, nullptr);
-            _descriptorPool = VK_NULL_HANDLE;
         }
         if (_descriptorSetLayout != VK_NULL_HANDLE) {
             vkDestroyDescriptorSetLayout(_device.getDevice(), _descriptorSetLayout, nullptr);
-            _descriptorSetLayout = VK_NULL_HANDLE;
         }
-        vkDestroyPipelineLayout(_device.getDevice(), _pipelineLayout, nullptr);
-        _pipelineLayout = VK_NULL_HANDLE;
+        if (_pipelineLayout != VK_NULL_HANDLE) {
+            vkDestroyPipelineLayout(_device.getDevice(), _pipelineLayout, nullptr);
+        }
     }
 
-}
+} // namespace vulkan

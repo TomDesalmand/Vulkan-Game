@@ -1,9 +1,6 @@
 // Header Files Include
 #include "input/input.hpp"
 
-// STD include
-#include <algorithm>
-
 namespace vulkan {
 
     Input::Input(GLFWwindow* window) : _window(window) {

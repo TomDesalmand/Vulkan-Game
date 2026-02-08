@@ -45,8 +45,17 @@ namespace vulkan {
         shaderStages[1].pNext = nullptr;
         shaderStages[1].pSpecializationInfo = nullptr;
 
-        std::vector<VkVertexInputBindingDescription> bindingDescriptions = Model::Vertex::getBindingDescriptions();
-        std::vector<VkVertexInputAttributeDescription> attributeDescriptions = Model::Vertex::getAttributeDescriptions();
+        std::vector<VkVertexInputBindingDescription> bindingDescriptions;
+        std::vector<VkVertexInputAttributeDescription> attributeDescriptions;
+        // If the caller provided custom vertex input descriptions use those, otherwise fall back
+        // to the default Model::Vertex descriptions.
+        if (!configurationInformation.vertexBindingDescriptions.empty() && !configurationInformation.vertexAttributeDescriptions.empty()) {
+            bindingDescriptions = configurationInformation.vertexBindingDescriptions;
+            attributeDescriptions = configurationInformation.vertexAttributeDescriptions;
+        } else {
+            bindingDescriptions = Model::Vertex::getBindingDescriptions();
+            attributeDescriptions = Model::Vertex::getAttributeDescriptions();
+        }
 
         VkPipelineVertexInputStateCreateInfo vertexInputInformation{};
         vertexInputInformation.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;

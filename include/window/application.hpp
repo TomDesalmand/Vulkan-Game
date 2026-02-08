@@ -26,7 +26,7 @@ namespace vulkan {
             Window _window{WIDTH, HEIGHT, "Vulkan Application"};
             Device _device{_window};
             Renderer _renderer{_window, _device};
-            std::unique_ptr<RenderSystem> _renderSystem;
+            std::unique_ptr<UnifiedRenderSystem> _unifiedRenderSystem;
             Registry _registry;
 
             void loadObjects();
